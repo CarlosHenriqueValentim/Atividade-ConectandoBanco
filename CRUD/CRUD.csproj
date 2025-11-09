@@ -46,6 +46,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Atualizar.cs" />
+    <Compile Include="Criar.cs" />
+    <Compile Include="Excluir.cs" />
+    <Compile Include="Ler.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

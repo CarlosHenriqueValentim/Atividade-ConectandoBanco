@@ -10,3 +10,4 @@ C:\Users\Rick\Desktop\CRUD\CRUD\obj\Debug\CRUD.csproj.CoreCompileInputs.cache
 C:\Users\Rick\Desktop\CRUD\CRUD\obj\Debug\CRUD.csproj.Up2Date
 C:\Users\Rick\Desktop\CRUD\CRUD\obj\Debug\ConectandoBanco.exe
 C:\Users\Rick\Desktop\CRUD\CRUD\obj\Debug\ConectandoBanco.pdb
+C:\Users\Rick\Desktop\CRUD\CRUD\obj\Debug\ConectandoBanco.exe.config

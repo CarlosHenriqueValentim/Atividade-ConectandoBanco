@@ -9,16 +9,18 @@ namespace CRUD
 {
     internal class Program
     {
-        const string conexao = "server=localhost;uid=root;pwd=root;database=escola;port=3306";
+        static string conexao = "server=localhost;uid=root;pwd=root;database=escola;port=3306";
+
+        /* Erro da Apostila: a porta original era 5432 (do PostgreSQL), o que causava falha na conexão.
+           Corrigi para 3306, que é a porta padrão do MySQL. */
 
         static void Main(string[] args)
         {
-            for(; ; )
+            while (true)
             {
                 try
                 {
-                    Console.Write("" +
-                        "Gerenciador de Alunos - (C# + MySQL WorkBench 8.0)\n\n" +
+                    Console.Write("Gerenciador de Alunos - (C# + MySQL WorkBench 8.0)\n\n" +
                         "Menu\n\n" +
                         "1 - Cadastrar aluno\n" +
                         "2 - Listar todos os alunos\n" +
@@ -33,15 +35,19 @@ namespace CRUD
 
                     switch (opc)
                     {
-                        case "1": CadastrarAluno(); break;
-                        case "2": ListarAlunos(); break;
-                        case "3": BuscarAlunoPorNome(); break;
-                        case "4": AtualizarAluno(); break;
-                        case "5": ExcluirAluno(); break;
-                        case "6": ExibirTotalAlunos(); break;
-                        case "Q": return;
-                        case "q": return;
-                        default: Console.WriteLine("\nOpção inválida\n"); break;
+                        case "1": Criar.CadastrarAluno(conexao); break;
+                        case "2": Ler.ListarAlunos(conexao); break;
+                        case "3": Ler.BuscarAlunoPorNome(conexao); break;
+                        case "4": Atualizar.AtualizarAluno(conexao); break;
+                        case "5": Excluir.ExcluirAluno(conexao); break;
+                        case "6": Ler.ExibirTotalAlunos(conexao); break;
+                        case "Q":
+                        case "q":
+                            Console.Write("\nCompilação Finalizada :)\n");
+                            return;
+                        default:
+                            Console.WriteLine("\nOpção inválida\n");
+                            break;
                     }
                 }
                 catch (Exception ex)
@@ -51,228 +57,9 @@ namespace CRUD
             }
         }
 
-        static MySqlConnection GetConnection()
+        public static MySqlConnection GetConnection(string conexao)
         {
             return new MySqlConnection(conexao);
-        }
-
-        static void CadastrarAluno()
-        {
-            Console.Write("\nNome:");
-            string nome = Console.ReadLine();
-            Console.Write("Idade:");
-            if (!int.TryParse(Console.ReadLine(), out int idade))
-            {
-                Console.WriteLine("\nIdade inválida\n");
-                return;
-            }
-            Console.Write("Curso:");
-            string curso = Console.ReadLine();
-
-            string sqlInsert = "INSERT INTO alunos (Nome, Idade, Curso) VALUES (@nome, @idade, @curso)";
-
-            try
-            {
-                using (var conexao = GetConnection())
-                {
-                    conexao.Open();
-                    using (var cmd = new MySqlCommand(sqlInsert, conexao))
-                    {
-                        cmd.Parameters.AddWithValue("@nome", nome);
-                        cmd.Parameters.AddWithValue("@idade", idade);
-                        cmd.Parameters.AddWithValue("@curso", curso);
-                        int linhas = cmd.ExecuteNonQuery();
-                        Console.WriteLine(linhas + "\nregistro(s) inserido(s)\n");
-                    }
-                }
-            }
-            catch (MySqlException mex)
-            {
-                Console.WriteLine("\nErro ao inserir:" + mex.Message);
-            }
-        }
-
-        static void ListarAlunos()
-        {
-            string sqlSelect = "SELECT Id, Nome, Idade, Curso FROM alunos";
-            try
-            {
-                using (var conexao = GetConnection())
-                {
-                    conexao.Open();
-                    using (var cmd = new MySqlCommand(sqlSelect, conexao))
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (!reader.HasRows)
-                        {
-                            Console.WriteLine("\nNenhum aluno encontrado\n");
-                            return;
-                        }
-                        while (reader.Read())
-                        {
-                            int id = reader.GetInt32("Id");
-                            string nome = reader.GetString("Nome");
-                            int idade = reader.GetInt32("Idade");
-                            string curso = reader.GetString("Curso");
-                            Console.WriteLine("Id: " + id + " | Nome: " + nome + " | Idade: " + idade + " | Curso: " + curso);
-                        }
-                    }
-                }
-            }
-            catch (MySqlException mex)
-            {
-                Console.WriteLine("\nErro ao listar: " + mex.Message);
-            }
-        }
-
-        static void BuscarAlunoPorNome()
-        {
-            Console.Write("\nDigite parte ou todo o nome:");
-            string termo = Console.ReadLine();
-            string sql = "SELECT Id, Nome, Idade, Curso FROM alunos WHERE Nome LIKE @termo";
-            try
-            {
-                using (var conexao = GetConnection())
-                {
-                    conexao.Open();
-                    using (var cmd = new MySqlCommand(sql, conexao))
-                    {
-                        cmd.Parameters.AddWithValue("@termo", "%" + termo + "%");
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            bool encontrou = false;
-                            while (reader.Read())
-                            {
-                                encontrou = true;
-                                int id = reader.GetInt32("Id");
-                                string nome = reader.GetString("Nome");
-                                int idade = reader.GetInt32("Idade");
-                                string curso = reader.GetString("Curso");
-                                Console.WriteLine("Id: " + id + " | Nome: " + nome + " | Idade: " + idade + " | Curso: " + curso);
-                            }
-                            if (!encontrou) Console.WriteLine("\nNenhum resultado");
-                        }
-                    }
-                }
-            }
-            catch (MySqlException mex)
-            {
-                Console.WriteLine("\nErro na busca:" + mex.Message);
-            }
-        }
-
-        static void AtualizarAluno()
-        {
-            Console.Write("\nId do aluno a atualizar:");
-            if (!int.TryParse(Console.ReadLine(), out int id))
-            {
-                Console.WriteLine("\nId inválido");
-                return;
-            }
-
-            Console.Write("Novo nome (enter para manter):");
-            string novoNome = Console.ReadLine();
-            Console.Write("Nova idade (enter para manter):");
-            string idadeInput = Console.ReadLine();
-            Console.Write("Novo curso (enter para manter):");
-            string novoCurso = Console.ReadLine();
-
-            string selectSql = "SELECT Nome, Idade, Curso FROM alunos WHERE Id = @id";
-
-            try
-            {
-                using (var conexao = GetConnection())
-                {
-                    conexao.Open();
-                    using (var selectCmd = new MySqlCommand(selectSql, conexao))
-                    {
-                        selectCmd.Parameters.AddWithValue("@id", id);
-                        using (var reader = selectCmd.ExecuteReader())
-                        {
-                            if (!reader.Read())
-                            {
-                                Console.WriteLine("\nAluno não encontrado");
-                                return;
-                            }
-
-                            string nomeAtual = reader.GetString("Nome");
-                            int idadeAtual = reader.GetInt32("Idade");
-                            string cursoAtual = reader.GetString("Curso");
-
-                            string nomeFinal = string.IsNullOrWhiteSpace(novoNome) ? nomeAtual : novoNome;
-                            int idadeFinal = int.TryParse(idadeInput, out int tmp) ? tmp : idadeAtual;
-                            string cursoFinal = string.IsNullOrWhiteSpace(novoCurso) ? cursoAtual : novoCurso;
-
-                            reader.Close();
-
-                            string updateSql = "UPDATE alunos SET Nome = @nome, Idade = @idade, Curso = @curso WHERE Id = @id";
-                            using (var updateCmd = new MySqlCommand(updateSql, conexao))
-                            {
-                                updateCmd.Parameters.AddWithValue("@nome", nomeFinal);
-                                updateCmd.Parameters.AddWithValue("@idade", idadeFinal);
-                                updateCmd.Parameters.AddWithValue("@curso", cursoFinal);
-                                updateCmd.Parameters.AddWithValue("@id", id);
-                                int linhas = updateCmd.ExecuteNonQuery();
-                                Console.WriteLine(linhas + " registro(s) atualizado(s)");
-                            }
-                        }
-                    }
-                }
-            }
-            catch (MySqlException mex)
-            {
-                Console.WriteLine("\nErro ao atualizar:" + mex.Message);
-            }
-        }
-
-        static void ExcluirAluno()
-        {
-            Console.Write("Id do aluno a excluir:");
-            if (!int.TryParse(Console.ReadLine(), out int id))
-            {
-                Console.WriteLine("\nId inválido\n");
-                return;
-            }
-
-            string sql = "DELETE FROM alunos WHERE Id = @id";
-            try
-            {
-                using (var conexao = GetConnection())
-                {
-                    conexao.Open();
-                    using (var cmd = new MySqlCommand(sql, conexao))
-                    {
-                        cmd.Parameters.AddWithValue("@id", id);
-                        int linhas = cmd.ExecuteNonQuery();
-                        Console.WriteLine(linhas + "registro(s) excluído(s).");
-                    }
-                }
-            }
-            catch (MySqlException mex)
-            {
-                Console.WriteLine("\nErro ao excluir:" + mex.Message);
-            }
-        }
-
-        static void ExibirTotalAlunos()
-        {
-            string sql = "SELECT COUNT(*) FROM alunos";
-            try
-            {
-                using (var conexao = GetConnection())
-                {
-                    conexao.Open();
-                    using (var cmd = new MySqlCommand(sql, conexao))
-                    {
-                        var result = cmd.ExecuteScalar();
-                        Console.WriteLine("\nTotal de alunos:" + result);
-                    }
-                }
-            }
-            catch (MySqlException mex)
-            {
-                Console.WriteLine("\nErro ao contar:" + mex.Message);
-            }
         }
     }
 }
